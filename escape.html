@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Escape</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #020617;
+      color: #f1f5f9;
+      text-align: center;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    #bg-layer {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: -2;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      transition: background-image 0.8s ease-in-out;
+      opacity: 0.9;
+    }
+
+    #bg-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: -1;
+      background: radial-gradient(circle at center, rgba(15, 23, 42, 0) 0%, rgba(2, 6, 23, 0.5) 100%);
+    }
+
+    #game {
+      max-width: 650px;
+      width: 90%;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 40px 30px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      transition: transform 0.3s ease;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-top: 0;
+      background: linear-gradient(to right, #a5b4fc, #6366f1, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+
+    h2#room {
+      font-size: 1.2rem;
+      color: #818cf8;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font-weight: 600;
+    }
+
+    #msg {
+      min-height: 90px;
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+      transition: all 0.3s ease;
+    }
+
+    #actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+      font-family: inherit;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(79, 70, 229, 0.45), 0 0 12px rgba(59, 130, 246, 0.3);
+      background: linear-gradient(135deg, #6366f1 0%, #60a5fa 100%);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    h3 {
+      font-size: 1.05rem;
+      color: #94a3b8;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    #inv {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+      min-height: 44px;
+      align-items: center;
+    }
+
+    .inv-badge {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #e0e7ff;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .empty-inv {
+      color: #64748b;
+      font-size: 0.95rem;
+      font-style: italic;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: rgba(30, 41, 59, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 32px;
+      border-radius: 24px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1);
+    }
+
+    .modal-content h3 {
+      margin-top: 0;
+      font-size: 1.2rem;
+      color: #f8fafc;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+
+    .modal-content input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.5);
+      color: white;
+      font-size: 1.1rem;
+      margin-bottom: 24px;
+      outline: none;
+      box-sizing: border-box;
+      text-align: center;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .modal-content input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+    }
+
+    .modal-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .modal-buttons button {
+      margin: 0;
+      flex: 1;
+    }
+
+    .modal-buttons button#modal-cancel {
+      background: rgba(148, 163, 184, 0.1);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      color: #cbd5e1;
+      box-shadow: none;
+    }
+
+    .modal-buttons button#modal-cancel:hover {
+      background: rgba(148, 163, 184, 0.2);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    /* Success Screen Styling */
+    .success-container {
+      max-width: 500px;
+      padding: 40px;
+      animation: scaleUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .success-title {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      background: linear-gradient(to right, #34d399, #059669);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+    }
+
+    .success-subtitle {
+      font-size: 1.2rem;
+      color: #cbd5e1;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    .restart-btn {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .restart-btn:hover {
+      background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.5);
+    }
+
+    @keyframes scaleUp {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div id="bg-layer"></div>
+  <div id="bg-overlay"></div>
+  <div id="game">
+    <h1>🏚️ 미니 방탈출</h1>
+    <h2 id="room"></h2>
+    <div id="msg"></div>
+    <div id="actions"></div>
+    <h3>인벤토리:</h3>
+    <div id="inv"></div>
+  </div>
+
+  <!-- Custom Input Modal -->
+  <div id="modal" class="modal-overlay">
+    <div class="modal-content">
+      <h3 id="modal-title">비밀번호 입력</h3>
+      <input type="text" id="modal-input" placeholder="여기에 입력하세요" autocomplete="off" />
+      <div class="modal-buttons">
+        <button id="modal-submit">확인</button>
+        <button id="modal-cancel">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // DOM Element References (declared at the top for safety)
+    const bgLayer = document.getElementById('bg-layer');
+    const bgOverlay = document.getElementById('bg-overlay');
+    const roomEl = document.getElementById('room');
+    const msgEl = document.getElementById('msg');
+    const actionsEl = document.getElementById('actions');
+    const invEl = document.getElementById('inv');
+    const modalEl = document.getElementById('modal');
+    const modalTitleEl = document.getElementById('modal-title');
+    const modalInputEl = document.getElementById('modal-input');
+    const modalSubmitEl = document.getElementById('modal-submit');
+    const modalCancelEl = document.getElementById('modal-cancel');
+
+    // Game State
+    let room = 1;
+    let inv = [];
+    let msgText = '방 안을 둘러보고 탈출구를 찾으세요.';
+    let activePromptCallback = null;
+
+    // Item Icons Mapping for Premium Inventory View
+    const itemIcons = {
+      '열쇠': '🔑 열쇠',
+      '드라이버': '🪛 드라이버'
+    };
+
+    function has(item) {
+      return inv.includes(item);
+    }
+
+    function add(item) {
+      if (!has(item)) {
+        inv.push(item);
+      }
+      render();
+    }
+
+    function renderInventory() {
+      invEl.innerHTML = '';
+      if (inv.length === 0) {
+        invEl.innerHTML = '<span class="empty-inv">소지한 아이템 없음</span>';
+      } else {
+        inv.forEach(item => {
+          const badge = document.createElement('span');
+          badge.className = 'inv-badge';
+          badge.textContent = itemIcons[item] || item;
+          invEl.appendChild(badge);
+        });
+      }
+    }
+
+    function btn(t, f) {
+      const b = document.createElement('button');
+      b.textContent = t;
+      b.onclick = f;
+      actionsEl.appendChild(b);
+    }
+
+    function showPrompt(title, callback) {
+      modalTitleEl.textContent = title;
+      modalInputEl.value = '';
+      modalEl.classList.add('active');
+      modalInputEl.focus();
+      activePromptCallback = callback;
+    }
+
+    function closePrompt() {
+      modalEl.classList.remove('active');
+      activePromptCallback = null;
+    }
+
+    // Modal Events Setup
+    modalSubmitEl.onclick = () => {
+      const value = modalInputEl.value;
+      const callback = activePromptCallback;
+      closePrompt();
+      if (callback) {
+        callback(value);
+      }
+    };
+
+    modalCancelEl.onclick = () => {
+      closePrompt();
+    };
+
+    modalInputEl.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        modalSubmitEl.click();
+      } else if (e.key === 'Escape') {
+        closePrompt();
+      }
+    };
+
+    // Main Game Render Loop
+    function render() {
+      if (bgLayer) {
+        bgLayer.style.backgroundImage = `url('./room${room}.png')`;
+      }
+      roomEl.textContent = '방 ' + room;
+      renderInventory();
+      actionsEl.innerHTML = '';
+      msgEl.textContent = msgText;
+
+      if (room === 1) {
+        btn('책상 조사', () => {
+          msgText = '🔑 책상 서랍을 열고 열쇠를 찾았다!';
+          add('열쇠');
+        });
+        btn('문 열기', () => {
+          if (has('열쇠')) {
+            room = 2;
+            msgText = '🚪 열쇠로 문을 열고 두 번째 방으로 들어왔다.';
+            render();
+          } else {
+            msgText = '🔒 문이 잠겨있다. 열쇠가 필요한 것 같다.';
+            render();
+          }
+        });
+      }
+
+      else if (room === 2) {
+        btn('금고 조사', () => {
+          showPrompt('금고의 비밀번호 4자리를 입력하세요.\n(힌트: 1234)', (p) => {
+            if (p === '1234') {
+              msgText = '🪛 찰칵! 금고가 열리고 드라이버를 획득했다!';
+              add('드라이버');
+            } else {
+              msgText = '❌ 비밀번호가 틀렸다.';
+              render();
+            }
+          });
+        });
+        btn('다음 방', () => {
+          if (has('드라이버')) {
+            room = 3;
+            msgText = '💨 드라이버로 환풍구 나사를 풀고 다음 방으로 들어왔다.';
+            render();
+          } else {
+            msgText = '🔒 환풍구 덮개가 굳게 닫혀있다. 나사를 풀 도구가 필요하다.';
+            render();
+          }
+        });
+      }
+
+      else if (room === 3) {
+        btn('출구 패널', () => {
+          showPrompt('탈출을 위한 최종 암호를 입력하세요.\n(힌트: ESCAPE)', (p) => {
+            if ((p || '').toUpperCase() === 'ESCAPE') {
+              if (bgLayer) {
+                bgLayer.style.backgroundImage = "url('./success.png')";
+                bgLayer.style.opacity = "1";
+              }
+              if (bgOverlay) {
+                bgOverlay.style.background = "radial-gradient(circle at center, rgba(15, 23, 42, 0) 0%, rgba(2, 6, 23, 0.35) 100%)";
+              }
+              const gameEl = document.getElementById('game');
+              if (gameEl) {
+                gameEl.innerHTML = `
+                  <div class="success-container">
+                    <h1 class="success-title">🎉 탈출 성공!</h1>
+                    <p class="success-subtitle">모든 퍼즐을 풀고 탈출에 성공했습니다!</p>
+                    <button onclick="location.reload()" class="restart-btn">다시 시작하기</button>
+                  </div>
+                `;
+              }
+            } else {
+              msgText = '❌ 암호가 틀렸다.';
+              render();
+            }
+          });
+        });
+      }
+    }
+
+    // Start Game
+    render();
+  </script>
+</body>
+</html>
